@@ -99,16 +99,24 @@ int main(int argc,char *argv[]){
         sscanf(buffer,"%s %s",metodo,caminho);
 
         char caminho_completo[512];
-        snprintf(caminho_completo,sizeof(caminho_completo),"%s%s",diretorio_base,
-                 strcmp(caminho,"/") == 0 ? "/index.html" : caminho);
-
-        struct stat st;
-        if(stat(caminho_completo, &st) == 0){
-            if(S_ISDIR(st.st_mode))listar_diretorio(cliente, caminho_completo);
-            else enviar_arquivo(cliente, caminho_completo);
-        }else{
-            char *erro = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRecurso não encontrado.\n";
-            send(cliente,erro,strlen(erro),0);
+        if(strcmp(caminho,"/") == 0) {
+            snprintf(caminho_completo,sizeof(caminho_completo),"%s/index.html",diretorio_base);
+            struct stat st;
+            if(stat(caminho_completo,&st) == 0){
+                enviar_arquivo(cliente,caminho_completo);
+            } else {
+                listar_diretorio(cliente,diretorio_base);
+            }
+        } else {
+            snprintf(caminho_completo,sizeof(caminho_completo),"%s%s",diretorio_base,caminho);
+            struct stat st;
+            if(stat(caminho_completo,&st) == 0){
+                if(S_ISDIR(st.st_mode)) listar_diretorio(cliente,caminho_completo);
+                else enviar_arquivo(cliente,caminho_completo);
+            } else {
+                char *erro = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\nRecurso não encontrado.\n";
+                send(cliente,erro,strlen(erro),0);
+            }
         }
 
         close(cliente);
